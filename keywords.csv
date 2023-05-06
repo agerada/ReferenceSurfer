@@ -1,22 +1,4 @@
 ﻿index,keyterms,value
-<<<<<<< HEAD
-1,pharmacokinetic,
-2,pharmacodynamic,
-3,MIC,
-4,PK-PD target,
-5,PK/PD target,
-6,pharmacodynamic target,
-7,AUC:MIC,
-8,AUC/MIC,
-9,T>MIC,
-10,time above MIC,
-11,Cmax:MIC,
-12,Cmax/MIC,
-13,target attainment,
-14,target magnitude,
-15,time dependent,
-16,concentration dependent,
-=======
 1,pharmacokinetic,3
 2,pharmacodynamic,3
 3,MIC,2
@@ -91,4 +73,3 @@
 72,quinolone,0.5
 73,glycopeptide,0.5
 74,fluoroquinolone,0.5
->>>>>>> nada/main

@@ -8,11 +8,7 @@
 
 """Surfing classes"""
 
-<<<<<<< HEAD
-from Paper import PaperNode
-=======
 from Paper import Paper
->>>>>>> nada/main
 
 class SurfAction():
     def __init__(self, is_back_to_start: bool): 
@@ -37,26 +33,17 @@ class PreviouslySeenPaper(SurfAction):
     def __init__(self): 
         super().__init__(is_back_to_start=False)
 
-<<<<<<< HEAD
-class SurfWrapper(): 
-    def __init__(self, paper: PaperNode, action: SurfAction): 
-=======
 class LowScorePaper(SurfAction):
     def __init__(self): 
         super().__init__(is_back_to_start=True)
 
 class SurfWrapper(): 
     def __init__(self, paper: Paper, action: SurfAction): 
->>>>>>> nada/main
         self._paper = paper
         self._action = action
     
     def is_back_to_start(self): 
         return self._action.is_back_to_start()
     
-<<<<<<< HEAD
-    def get_paper_node(self): 
-=======
     def get_paper(self): 
->>>>>>> nada/main
         return self._paper

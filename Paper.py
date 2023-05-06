@@ -9,11 +9,8 @@
 """Paper and PaperNode classes"""
 
 from anytree import NodeMixin
-<<<<<<< HEAD
-=======
 import networkx as nx 
 from unidecode import unidecode
->>>>>>> nada/main
 
 class Paper:
     def __init__(self, DOI, title, author, year, references = None):
@@ -57,8 +54,6 @@ class Paper:
             author = None
         return author
     
-<<<<<<< HEAD
-=======
     def get_last_author(self):
         try:
             author = self._author[-1]['family']
@@ -77,7 +72,6 @@ class Paper:
             author = None
         return authors_list
     
->>>>>>> nada/main
     def get_references(self):
         return self._references
     
@@ -91,52 +85,6 @@ class Paper:
         return self._year   
     
     def make_name(self):
-<<<<<<< HEAD
-        name = f"{self.get_first_author()} et al, {self.get_year()} ({self.get_DOI()})" 
-        return name
-        
-class PaperNode(Paper, NodeMixin):
-    def __init__(self, DOI, title, author, year, references = None, parent = None, children = None):
-        super().__init__(DOI, title, author, year, references)
-        self.name = self.make_name()
-        self.parent = parent
-        if children:
-            self.children = children
-    
-    def add_children(self, children):
-        if not children: 
-            return
-        self.children = children
-
-    def add_child_node(self, child_node): 
-        if not child_node: 
-            return
-        if type(child_node) != PaperNode: 
-            raise ValueError("Function .add_child_node() can only take PaperNode for parameter child_node") 
-        if child_node in self.get_children(): 
-            return
-        previous_children = self.get_children()
-        new_children = list(previous_children)
-        new_children.append(child_node)
-        self.children = new_children
-    
-    def get_children(self): 
-        return self.children
-    
-    def clear_children(self): 
-        self.children = tuple()
-
-    def set_parent(self, parent): 
-        self.parent = parent
-
-    def get_parent(self): 
-        return self.parent
-    
-    def count_ancestors(self):
-        ancestors = list(self.ancestors)
-        num_ancestors = len(ancestors)
-        return num_ancestors
-=======
         name = f""" \n {self.get_first_author()} \n {self.get_year()}""" 
         {self.get_DOI()} 
         return name
@@ -251,4 +199,3 @@ class DAGNode():
         
         
     
->>>>>>> nada/main
