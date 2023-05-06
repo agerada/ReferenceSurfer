@@ -26,80 +26,18 @@ import networkx as nx
 from matplotlib.patches import FancyArrowPatch
 import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
+from data_processing import read_keywords, read_imported_authors
+from query_handlers import query_from_DOI, make_paper_from_query
 
 Entrez.email = 'youremail@email.com'
 NCBI_API_KEY='your_API_key'
-fetch = PubMedFetcher()
 #into terminal: export NCBI_API_KEY='YOUR API-KEY'
 
-KEYWORDS = 'keywords.csv'
-IMPORTANT_AUTHORS = 'important_authors.csv'
+KEYWORDS_PATH = 'keywords.csv'
+IMPORTANT_AUTHORS_PATH = 'important_authors.csv'
 
-keywords = [] 
-important_authors = [] 
-
-with open(KEYWORDS, 'r') as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-        keyterm = row['keyterms']
-        value = row['value']
-        keyword = [unidecode(keyterm).lower(), value]
-        keywords.append(keyword)
-    
-with open(IMPORTANT_AUTHORS, 'r') as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-        author = row['Last']
-        author = unidecode(author)
-        author = author.lower()
-        important_authors.append(author)
-
-def make_paper_from_query(query):
-    message = query['message']
-    doi = message['DOI']
-    if '.org/' in doi:
-        pmiddoi = doi.rpartition('.org/')[-1]
-    else:
-        pmiddoi = doi
-    pmid = fetch.pmids_for_query(pmiddoi)
-    article = fetch.article_by_pmid(pmid)
-    title = message['title']
-    if title == None:
-        try:
-            title = article.title
-        except:
-            pass
-    author = message['author']
-    if author == None:
-        author = article.authors
-        author = article.authors[0]
-        author = author.rpartition(" ")[0]        
-    date_time = message['created']['date-time']
-    if article.year:
-        year = article.year
-    else: 
-        year = datetime.fromisoformat(date_time).year
-    references = message['reference'] if message['references-count'] > 0 else None
-    return Paper(DOI=doi,
-                 title=title,
-                 author=author,
-                 year=year,
-                 references=references)
-
-def query_from_DOI(doi): 
-    cr = Crossref()
-    try: 
-        query = cr.works(doi)
-    except: 
-        print(f"Failed to pull DOI {doi}")
-        return None
-    
-    if query['message-type'] == 'work': 
-        print(f"Found paper: {doi}")
-        return query
-    
-    print(f"Unable to pull {doi}")
-    return None
+keywords = read_keywords(KEYWORDS_PATH)
+important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
 
 def make_dagnode_from_paper(paper_name, score : float = None, depth : float = None):
     dagnode = DAGNode(paper_name, score, depth)
@@ -109,7 +47,7 @@ def get_dagnode(paper: Paper):
     id = paper.make_name()
     return(tuple(id, ))
 
-def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, cr, back_to_start_weight=0.15):
+def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, back_to_start_weight=0.15):
     
     if seen_papers:
         papers = seen_papers.union(starting_papers)
@@ -214,7 +152,6 @@ def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, impor
                        action=BackToStart())
 
 def main(): 
-    cr = Crossref()
     STARTING_CORPUS_PATH = 'corpus.csv'
 
     starting_DOIs = set()
@@ -293,7 +230,7 @@ def main():
     paper_pointer = choice(list(starting_papers))
     for _ in range(10): 
         print(f"iteration {_}")
-        new_wrapped_paper = surf(paper_pointer, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, cr=cr,
+        new_wrapped_paper = surf(paper_pointer, starting_papers, seen_DOIs, seen_papers, keywords, important_authors,
                                  back_to_start_weight=0.15)
         new_paper = new_wrapped_paper.get_paper()
         #new_paper_score = new_paper.score_paper(keywords, important_authors)
