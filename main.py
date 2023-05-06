@@ -80,7 +80,7 @@ def make_paper_from_query(query):
     else: 
         year = datetime.fromisoformat(date_time).year
     references = message['reference'] if message['references-count'] > 0 else None
-    return PaperNode(DOI=doi,
+    return Paper(DOI=doi,
                  title=title,
                  author=author,
                  year=year,
@@ -256,7 +256,6 @@ def main():
     for i in starting_DOIs:
         result = query_from_DOI(i)
         paper = make_paper_from_query(result)
-        #paper.children = [PaperNode('123', 'test', 'Me', '1920'), PaperNode('456', 'testing', 'you', '1924')]
         starting_papers.add(paper)
         paper_name = paper.make_name()
         dag_node = make_dagnode_from_paper(paper_name)
@@ -292,7 +291,7 @@ def main():
 
     #Start surfing
     paper_pointer = choice(list(starting_papers))
-    for _ in range(1000): 
+    for _ in range(10): 
         print(f"iteration {_}")
         new_wrapped_paper = surf(paper_pointer, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, cr=cr,
                                  back_to_start_weight=0.15)
@@ -337,16 +336,6 @@ def main():
         
         #Keep track of how many times we have seen this paper
         if new_paper not in starting_papers: 
-            if new_paper in tree:
-                # if we already have a node for this paper in tree, add another node only
-                # if parent different to previously recorded nodes
-                previous_nodes = [i for i in tree if i == new_paper]
-                if not any([True for i in previous_nodes if i.get_parent() == paper_pointer]): 
-                    new_paper.set_parent(paper_pointer)
-                    tree.append(new_paper)
-            else: 
-                new_paper.set_parent(paper_pointer)
-                tree.append(new_paper)
             if new_paper not in seen_papers: 
                 paper_counter[new_paper] = 1
                 seen_DOIs.add(new_paper.get_DOI())
@@ -510,69 +499,3 @@ def main():
     plt.show()
 
 main()
-   
-"""""
-        ##paper_score = 5
-
-        #weight title by keywords
-        title = new_paper.get_title()
-        title = unidecode.unidecode(title)
-        title = title.lower()      
-        if title:  
-            for i in keywords: 
-                if i not in title:
-                    back_to_start_weight = back_to_start_weight + 0.1
-                    ##paper_score = paper_score -1
-                    if back_to_start_weight < 0:
-                        back_to_start_weight = 0
-        
-        #weight authors by author list
-        first_author = new_paper.get_first_author()
-        all_authors = new_paper.get_authors()
-        first_author = unidecode.unidecode(first_author)
-        all_authors = unidecode.unidecode(all_authors)
-        first_author = first_author.lower()
-        all_authors = all_authors.lower()
-        if first_author:
-            for a in important_authors:
-                if a in first_author:
-                    back_to_start_weight = back_to_start_weight - 0.1
-                    ##paper_score = paper_score + 1
-                    if back_to_start_weight < 0:
-                        back_to_start_weight = 0
-                if a not in all_authors:
-                    back_to_start_weight = back_to_start_weight + 0.01
-                    ##paper_score = paper_score - 0.2
-                    if back_to_start_weight < 0:
-                            back_to_start_weight = 0
-        
-        #weight by depth 
-        depth = paper_pointer.depth
-        if 1 < depth < 4:
-            back_to_start_weight = back_to_start_weight - 0.05
-            #paper_score = paper_score + 0.5
-        if 4 <= depth < 6:
-            back_to_start_weight = back_to_start_weight - 0.1
-            #paper_score = paper_score + 1
-        if depth >= 6:
-            back_to_start_weight = back_to_start_weight - 0.149
-            #paper_score = paper_score + 2
-
-        #weight by times_seen
-        paper_pointer, times_seen in paper_counter.items():
-        if 1 < times_seen <= 3:
-            back_to_start_weight = back_to_start_weight - 0.05
-            #paper_score = paper_score + 0.5
-            if back_to_start_weight < 0:
-                back_to_start_weight = 0
-        if 3 < times_seen <= 5: 
-            back_to_start_weight = back_to_start_weight - 0.10
-            #paper_score = paper_score + 1
-            if back_to_start_weight < 0:
-                back_to_start_weight = 0
-        if times_seen > 5:
-            back_to_start_weight = back_to_start_weight - 0.14
-            #paper_score = paper_score + 2
-            if back_to_start_weight < 0:
-                back_to_start_weight = 0
-"""
