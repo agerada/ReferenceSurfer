@@ -11,7 +11,7 @@
 from habanero import Crossref
 from datetime import datetime
 from metapub import PubMedFetcher
-from Paper import Paper
+from referencesurfer.paper_nodes import Paper
 
 cr = Crossref()
 fetch = PubMedFetcher()

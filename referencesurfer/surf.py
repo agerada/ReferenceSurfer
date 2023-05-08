@@ -8,7 +8,7 @@
 
 """Surfing classes"""
 
-from Paper import Paper
+from paper_nodes import Paper
 
 class SurfAction():
     def __init__(self, is_back_to_start: bool): 

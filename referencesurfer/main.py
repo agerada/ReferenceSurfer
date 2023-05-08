@@ -8,6 +8,7 @@
 
 """Documentation"""
 
+# External dependencies
 from habanero import Crossref
 from Bio import Entrez
 from metapub import PubMedFetcher
@@ -18,37 +19,33 @@ from datetime import datetime
 from random import random, choice
 from anytree import Node, RenderTree
 from unidecode import unidecode
-from Surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
-from Paper import Paper, DAGNode
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx 
 from matplotlib.patches import FancyArrowPatch
 import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
-from data_processing import read_keywords, read_imported_authors
-from query_handlers import query_from_DOI, make_paper_from_query
+
+# Internal dependencies
+from referencesurfer.surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
+from referencesurfer.paper_nodes import DAGNode
+from referencesurfer.data_processing import read_keywords, read_imported_authors
+from referencesurfer.query_handlers import query_from_DOI, make_paper_from_query
 
 Entrez.email = 'youremail@email.com'
 NCBI_API_KEY='your_API_key'
 #into terminal: export NCBI_API_KEY='YOUR API-KEY'
 
-KEYWORDS_PATH = 'keywords.csv'
-IMPORTANT_AUTHORS_PATH = 'important_authors.csv'
+KEYWORDS_PATH = 'referencesurfer/keywords.csv'
+IMPORTANT_AUTHORS_PATH = 'referencesurfer/important_authors.csv'
+STARTING_CORPUS_PATH = 'referencesurfer/corpus.csv'
+ABX_COLOURS = 'referencesurfer/antibiotic_colours.csv'
+
 
 keywords = read_keywords(KEYWORDS_PATH)
 important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
 
-def make_dagnode_from_paper(paper_name, score : float = None, depth : float = None):
-    dagnode = DAGNode(paper_name, score, depth)
-    return(dagnode)
-
-def get_dagnode(paper: Paper):
-    id = paper.make_name()
-    return(tuple(id, ))
-
 def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, back_to_start_weight=0.15):
-    
     if seen_papers:
         papers = seen_papers.union(starting_papers)
     else:
@@ -152,7 +149,7 @@ def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, impor
                        action=BackToStart())
 
 def main(): 
-    STARTING_CORPUS_PATH = 'corpus.csv'
+    
 
     starting_DOIs = set()
     seen_DOIs = set()
@@ -171,9 +168,8 @@ def main():
     depth_list = dict()
     paired_node_list = dict()
     
-    #Colour nodes by antibiotic class
-    ABX_COLOURS = 'antibiotic_colours.csv'
 
+    #Colour nodes by antibiotic class
     abx_list = []
     abx_colours = dict()
     abx_classes = dict()
@@ -195,7 +191,7 @@ def main():
         paper = make_paper_from_query(result)
         starting_papers.add(paper)
         paper_name = paper.make_name()
-        dag_node = make_dagnode_from_paper(paper_name)
+        dag_node = DAGNode(paper_name)
         dag_node.set_depth(0)
         node_list.add(dag_node)
         depth_list[paper_name] = dag_node.get_depth()
@@ -235,7 +231,7 @@ def main():
         new_paper = new_wrapped_paper.get_paper()
         #new_paper_score = new_paper.score_paper(keywords, important_authors)
         new_paper_name = new_paper.make_name()
-        new_node = make_dagnode_from_paper(new_paper_name)
+        new_node = DAGNode(new_paper_name)
 
         if new_node not in node_list:
             node_list.add(new_node)
