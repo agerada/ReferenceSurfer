@@ -27,10 +27,35 @@ import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
 
 # Internal dependencies
-from referencesurfer.surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
-from referencesurfer.paper_nodes import DAGNode
-from referencesurfer.data_processing import read_keywords, read_imported_authors
-from referencesurfer.query_handlers import query_from_DOI, make_paper_from_query
+"""
+from .referencesurfer import surf
+from .referencesurfer import paper_nodes
+from .referencesurfer import data_processing
+from .referencesurfer import query_handlers
+"""
+import referencesurfer.surf as surf
+import referencesurfer.paper_nodes as paper_nodes
+import referencesurfer.data_processing as data_processing
+import referencesurfer.query_handlers as query_handlers
+
+SurfWrapper = surf.SurfWrapper
+BackToStart = surf.BackToStart
+InvalidReferences = surf.InvalidReferences
+NewPaper = surf.NewPaper
+PreviouslySeenPaper = surf.PreviouslySeenPaper
+LowScorePaper = surf.LowScorePaper
+DAGNode = paper_nodes.DAGNode
+read_keywords = data_processing.read_keywords
+read_imported_authors = data_processing.read_imported_authors
+query_from_DOI = query_handlers.query_from_DOI
+make_paper_from_query = query_handlers.make_paper_from_query
+
+"""
+from surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
+from paper_nodes import DAGNode
+from data_processing import read_keywords, read_imported_authors
+from query_handlers import query_from_DOI, make_paper_from_query
+"""
 
 Entrez.email = 'youremail@email.com'
 NCBI_API_KEY='your_API_key'
