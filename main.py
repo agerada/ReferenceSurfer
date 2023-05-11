@@ -27,7 +27,7 @@ import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
 
 # Internal dependencies
-from referencesurfer.surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
+from referencesurfer.surf import Surfer, SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
 from referencesurfer.paper_nodes import DAGNode
 from referencesurfer.data_processing import read_keywords, read_imported_authors
 from referencesurfer.data_processing import read_starting_corpus, read_antibiotic_colours
@@ -218,7 +218,7 @@ def main():
             node_list.add(new_node)
 
         #If current paper has been arrived at from another paper without jumping - set parent and increase depth
-        if not new_wrapped_paper.is_back_to_start(): 
+        if not new_wrapped_paper.is_jump(): 
             parent_name = paper_pointer.make_name()
             new_node.set_parent(parent_name)
             parent_depth = depth_list[parent_name]

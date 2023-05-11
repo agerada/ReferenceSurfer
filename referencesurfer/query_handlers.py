@@ -11,8 +11,13 @@
 from habanero import Crossref
 from datetime import datetime
 from metapub import PubMedFetcher
-from . import paper_nodes
-Paper = paper_nodes.Paper
+import sys
+import os
+
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
+
+from paper_nodes import Paper
 
 cr = Crossref()
 fetch = PubMedFetcher()

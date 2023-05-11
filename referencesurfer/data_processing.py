@@ -61,3 +61,13 @@ def read_antibiotic_colours(path: str) -> tuple[list, dict, dict]:
             _abx_classes[abx] = abxclass
             _abx_list.append(abx)
     return _abx_list, _abx_colours, _abx_classes
+
+def write_output(path: str, results: dict) -> None: 
+    with open('output.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerow(['DOI', 'author', 'title', 'times_seen'])
+        for paper,times_seen in results.items(): 
+            writer.writerow([paper.get_DOI(), 
+                                paper.get_title(), 
+                                paper.get_first_author(),
+                                times_seen])
