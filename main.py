@@ -44,254 +44,109 @@ STARTING_CORPUS_PATH = 'referencesurfer/corpus.csv'
 ABX_COLOURS = 'referencesurfer/antibiotic_colours.csv'
 OUTPUT_PATH = 'output.csv'
 
-def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, back_to_start_weight=0.15):
-    if seen_papers:
-        papers = seen_papers.union(starting_papers)
-    else:
-        papers = starting_papers
-        
-    if not current_paper.get_references(): 
-        print(f"Current paper does not have references on system: {current_paper.get_title()}")
-        return SurfWrapper(choice(list(papers)), 
-                           action=InvalidReferences())
-    
-    if random() < back_to_start_weight: 
-        return SurfWrapper(choice(list(starting_papers)),
-                           action=BackToStart())
-    
-    for _ in range(10): 
-        random_reference = choice(current_paper.get_references())
-
-        # if we have already seen paper, don't download again
-
-        doi = random_reference.get_DOI()
-        if not doi: 
-            if not random_reference.get_title(): 
-                print("Empty paper title and empty DOI")
-            else:
-                print(f"No DOI for {random_reference.get_title()} found")
-            continue
-        
-        if doi not in seen_DOIs:
-            try: 
-                query = query_from_DOI(doi)
-            except: 
-                print(f"Unable to get query for: {random_reference.get_title()}")
-                continue
-            try:
-                random_paper = make_paper_from_query(query)
-                random_paper_score = random_paper.score_paper(keywords, important_authors)
-
-                if random_paper_score <= 10:
-                    print(f"""
-                    Very low paper score: {random_paper.get_title()} by {random_paper.get_first_author()}, 
-                    Total ={random_paper_score}, 
-                    Title = {random_paper.title_score(keywords)}, 
-                    Author = {random_paper.author_score(important_authors)} 
-                    - likely irrelevent, surf again
-                    """)
-
-                    back_to_start_weight = 0.15
-                    return SurfWrapper(choice(list(papers)), 
-                           action=LowScorePaper())
-        
-                elif 10 < random_paper_score < 20:
-                    print(f"""
-                    Moderate paper score: {random_paper.get_title()} by {random_paper.get_first_author()}, 
-                    Total ={random_paper_score}, 
-                    Title = {random_paper.title_score(keywords)}, 
-                    Author = {random_paper.author_score(important_authors)} 
-                    - may be relevant, accept paper but increase BTS 
-                    """)
-                    
-                    back_to_start_weight = 0.8
-                    return SurfWrapper(random_paper, 
-                                        action=NewPaper())
-                
-                elif random_paper_score > 40:
-                    print(f"""
-                    Excellent paper score: {random_paper.get_title()} by {random_paper.get_first_author()}, 
-                    Total ={random_paper_score}, 
-                    Title = {random_paper.title_score(keywords)}, 
-                    Author = {random_paper.author_score(important_authors)} 
-                    - highly likely relevant as are subsequent references, reduce BTS
-                    """)
-                    
-                    back_to_start_weight = 0.05
-                    return SurfWrapper(random_paper, 
-                                        action=NewPaper())
-                
-                else:
-                    print(f"""
-                    Good paper score: {random_paper.get_title()} by {random_paper.get_first_author()}, 
-                    Total ={random_paper_score}, 
-                    Title = {random_paper.title_score(keywords)}, 
-                    Author = {random_paper.author_score(important_authors)} 
-                    - likely relevant, continue
-                    """)
-
-                    back_to_start_weight = 0.15
-                    return SurfWrapper(random_paper, 
-                                        action=NewPaper())
-
-            except: 
-                print(f"Unable to make paper from query for: {random_reference.get_title()}")
-                continue
-
-        else: 
-            print(f"Paper already seen: {random_reference.get_title()}")
-            random_paper = next(x for x in seen_papers if x.get_DOI() == doi)
-            return SurfWrapper(random_paper, 
-                               action=PreviouslySeenPaper())
-      
-    return SurfWrapper(choice(list(papers)), 
-                       action=BackToStart())
-
 def main(): 
     keywords = read_keywords(KEYWORDS_PATH)
     important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
-
     starting_DOIs = read_starting_corpus(STARTING_CORPUS_PATH)
-    seen_DOIs = set()
-
-    starting_papers = set()
-    seen_papers = set()
-    paper_counter = dict()
-    node_list = set()
-    depth_list = dict()
-    paired_node_list = dict()
     
-
     #Colour nodes by antibiotic class
     abx_list, abx_colours, abx_classes = read_antibiotic_colours(ABX_COLOURS)
-    node_colours = dict()
 
-    #Add starting corpus as papers, DAG nodes (of depth 0) and calculate scores
-    for i in starting_DOIs:
-        result = query_from_DOI(i)
-        paper = make_paper_from_query(result)
-        starting_papers.add(paper)
-        paper_name = paper.make_name()
-        dag_node = DAGNode(paper_name)
-        dag_node.set_depth(0)
-        node_list.add(dag_node)
-        depth_list[paper_name] = dag_node.get_depth()
-        try:
-            first_author = paper.get_first_author()
-            first_author = unidecode(first_author)
-            first_author = first_author.lower()
-            if first_author not in important_authors:
-                important_authors.append(first_author)
-        except:
-            pass
-        try:
-            last_author = paper.get_last_author()
-            last_author = unidecode(last_author)
-            last_author = last_author.lower()
-            if last_author not in important_authors:
-                important_authors.append(last_author)
-        except:
-            pass 
-        try: 
-            title = paper.get_title()
-            title = unidecode(title)
-            title = title.lower()
-            node_colours[paper_name] = []
-            for ab in abx_list:
-                if ab in title:
-                   node_colours[paper_name].append(abx_colours[ab])           
-        except:
-            pass
+    surfer = Surfer(starting_DOIs, keywords, important_authors)
 
+    paper_lag = surfer.current_paper
     #Start surfing
-    paper_pointer = choice(list(starting_papers))
     for _ in range(10): 
         print(f"iteration {_}")
-        new_wrapped_paper = surf(paper_pointer, starting_papers, seen_DOIs, seen_papers, keywords, important_authors,
-                                 back_to_start_weight=0.15)
-        new_paper = new_wrapped_paper.get_paper()
-        #new_paper_score = new_paper.score_paper(keywords, important_authors)
+        new_paper = surfer.iterate_surf()
         new_paper_name = new_paper.make_name()
         new_node = DAGNode(new_paper_name)
 
-        if new_node not in node_list:
-            node_list.add(new_node)
+        if new_node not in surfer.node_list:
+            surfer.node_list.add(new_node)
 
         #If current paper has been arrived at from another paper without jumping - set parent and increase depth
-        if not new_wrapped_paper.is_jump(): 
-            parent_name = paper_pointer.make_name()
+        print(surfer.last_state)
+        if not surfer.last_state.is_jump(): 
+            parent_name = paper_lag.make_name()
             new_node.set_parent(parent_name)
-            parent_depth = depth_list[parent_name]
+            parent_depth = surfer.depth_list[parent_name]
             new_depth = parent_depth + 1
             new_node.set_depth(new_depth)
             new_node_depth = new_node.get_depth()
-            depth_list[new_paper_name] = new_node_depth
+            surfer.depth_list[new_paper_name] = new_node_depth
             new_edge = new_node.make_scoreless_edge()
-            if new_paper_name not in paired_node_list:
-                paired_node_list[new_paper_name] = []
-                paired_node_list[new_paper_name].append(new_edge)
+            if new_paper_name not in surfer.paired_node_list:
+                surfer.paired_node_list[new_paper_name] = []
+                surfer.paired_node_list[new_paper_name].append(new_edge)
             else:
-                if new_edge not in paired_node_list[new_paper_name]:
-                    paired_node_list[new_paper_name].append(new_edge)
+                if new_edge not in surfer.paired_node_list[new_paper_name]:
+                    surfer.paired_node_list[new_paper_name].append(new_edge)
                 else:
                     pass
         
         #Assign a colour
         new_paper_title = new_paper.get_title()
-        if new_paper_name not in node_colours:
-            node_colours[new_paper_name] = []
+        if new_paper_name not in surfer.node_colours:
+            surfer.node_colours[new_paper_name] = []
             for ab in abx_list:
                 if ab in new_paper_title:
-                    node_colours[new_paper_name].append(abx_colours[ab])
+                    surfer.node_colours[new_paper_name].append(abx_colours[ab])
         else:
             for ab in abx_list:
                 if ab in new_paper_title:
-                    node_colours[new_paper_name].append(abx_colours[ab])
+                    surfer.node_colours[new_paper_name].append(abx_colours[ab])
         
+        """
         #Keep track of how many times we have seen this paper
-        if new_paper not in starting_papers: 
-            if new_paper not in seen_papers: 
-                paper_counter[new_paper] = 1
-                seen_DOIs.add(new_paper.get_DOI())
-                seen_papers.add(new_paper)
+        if new_paper not in surfer.starting_papers: 
+            if new_paper not in surfer.seen_papers: 
+                surfer.paper_counter[new_paper] = 1
+                surfer.seen_DOIs.add(new_paper.get_DOI())
+                surfer.seen_papers.add(new_paper)
             else: 
-                paper_counter[new_paper] += 1
+                surfer.paper_counter[new_paper] += 1
      
+        """
+        # I don't think these steps are necessary 
+        # there is already a check in iterate_surf
+        
         if new_paper.get_references(): 
-            paper_pointer = new_paper
-        elif seen_papers: 
-            paper_pointer = choice(list(seen_papers))
+            paper_lag = new_paper
+        elif surfer.seen_papers: 
+            paper_lag = choice(list(surfer.seen_papers))
         else: 
-            paper_pointer = choice(list(starting_papers))
+            paper_lag = choice(list(surfer.starting_papers))
+        
 
     #Print our list of papers and how many times we have seen them, in order of frequency   
-    sorted_paper_counter = sorted(paper_counter.items(), key=lambda item: item[1], reverse=True)
+    sorted_paper_counter = sorted(surfer.paper_counter.items(), key=lambda item: item[1], reverse=True)
 
     for i,j in sorted_paper_counter: 
         print(f"Paper {i.make_name()} {i.get_title()} DOI {i.get_DOI()} seen {j} times")
 
     #Make pairs for DAG edges
     concat_paired_nodes = []
-    for paper_name in paired_node_list:
-        for pair in paired_node_list[paper_name]:
+    for paper_name in surfer.paired_node_list:
+        for pair in surfer.paired_node_list[paper_name]:
             concat_paired_nodes.append(pair)
     
     #Make labels for DAG nodes - label all initial papers
     labelled_list = [] 
     labels = {}
     node_name_list = []
-    for paper in starting_papers:
+    for paper in surfer.starting_papers:
         papername = paper.make_name() 
         labelled_list.append(papername)
     print(f"labelled starting {labelled_list}")
-    for node in node_list:
+    for node in surfer.node_list:
         name = node.get_name() 
         node_name_list.append(name)
     
     #Calculate scores for DAG node size
     freq_list = {}
     score_list = {}
-    for paper, frequency in paper_counter.items():
+    for paper, frequency in surfer.paper_counter.items():
         id = paper.make_name()
         freq_list[id] = frequency
     for pap_name in node_name_list:
@@ -299,8 +154,8 @@ def main():
             freq_score = freq_list[pap_name]
         else:
             freq_score = 1
-        if pap_name in depth_list and depth_list[pap_name] != None: 
-            depth_score = depth_list[pap_name]
+        if pap_name in surfer.depth_list and surfer.depth_list[pap_name] != None: 
+            depth_score = surfer.depth_list[pap_name]
             depth_score = depth_score * 3
         else:
             depth_score = 0
@@ -309,16 +164,16 @@ def main():
 
     #Colour DAG nodes according to antibiotic
     colour_list = dict()
-    for paper_name in node_colours:
+    for paper_name in surfer.node_colours:
         collist = []
-        for col in node_colours[paper_name]:
+        for col in surfer.node_colours[paper_name]:
             collist.append(col)
         if len(collist) == 0:
             colour_list[paper_name] = '#ADACAC'
         elif len(collist) == 1:
             colour_list[paper_name] = collist[0]
         else:
-            colset = set(node_colours[paper_name])
+            colset = set(surfer.node_colours[paper_name])
             if len(collist) != len(colset):
                colsetlist = list(colset)
                if len(colsetlist) > 1:
@@ -333,7 +188,7 @@ def main():
     #Make starting papers look different
     alpha_list = dict()
     line_width_list = {}
-    for paper in starting_papers:
+    for paper in surfer.starting_papers:
         name = paper.make_name()
         alpha_list[name] = 0.7
         line_width_list[name] = 7
@@ -401,7 +256,7 @@ def main():
                             font_size=6, font_weight='bold', font_family='sans-serif', 
                             horizontalalignment = 'center', verticalalignment = 'center')
 
-    write_output(OUTPUT_PATH, paper_counter)
+    write_output(OUTPUT_PATH, surfer.paper_counter)
     
     plt.show()
 
