@@ -11,7 +11,6 @@
 import unittest
 
 from .context import referencesurfer
-from referencesurfer import paper_nodes
 
 class PaperTestCase(unittest.TestCase): 
     def test_paper_name(self): 

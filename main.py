@@ -27,35 +27,12 @@ import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
 
 # Internal dependencies
-"""
-from .referencesurfer import surf
-from .referencesurfer import paper_nodes
-from .referencesurfer import data_processing
-from .referencesurfer import query_handlers
-"""
-import referencesurfer.surf as surf
-import referencesurfer.paper_nodes as paper_nodes
-import referencesurfer.data_processing as data_processing
-import referencesurfer.query_handlers as query_handlers
-
-SurfWrapper = surf.SurfWrapper
-BackToStart = surf.BackToStart
-InvalidReferences = surf.InvalidReferences
-NewPaper = surf.NewPaper
-PreviouslySeenPaper = surf.PreviouslySeenPaper
-LowScorePaper = surf.LowScorePaper
-DAGNode = paper_nodes.DAGNode
-read_keywords = data_processing.read_keywords
-read_imported_authors = data_processing.read_imported_authors
-query_from_DOI = query_handlers.query_from_DOI
-make_paper_from_query = query_handlers.make_paper_from_query
-
-"""
-from surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
-from paper_nodes import DAGNode
-from data_processing import read_keywords, read_imported_authors
-from query_handlers import query_from_DOI, make_paper_from_query
-"""
+from referencesurfer.surf import SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
+from referencesurfer.paper_nodes import DAGNode
+from referencesurfer.data_processing import read_keywords, read_imported_authors
+from referencesurfer.data_processing import read_starting_corpus, read_antibiotic_colours
+from referencesurfer.data_processing import write_output
+from referencesurfer.query_handlers import query_from_DOI, make_paper_from_query
 
 Entrez.email = 'youremail@email.com'
 NCBI_API_KEY='your_API_key'
@@ -65,10 +42,7 @@ KEYWORDS_PATH = 'referencesurfer/keywords.csv'
 IMPORTANT_AUTHORS_PATH = 'referencesurfer/important_authors.csv'
 STARTING_CORPUS_PATH = 'referencesurfer/corpus.csv'
 ABX_COLOURS = 'referencesurfer/antibiotic_colours.csv'
-
-
-keywords = read_keywords(KEYWORDS_PATH)
-important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
+OUTPUT_PATH = 'output.csv'
 
 def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, important_authors, back_to_start_weight=0.15):
     if seen_papers:
@@ -174,17 +148,11 @@ def surf(current_paper, starting_papers, seen_DOIs, seen_papers, keywords, impor
                        action=BackToStart())
 
 def main(): 
-    
+    keywords = read_keywords(KEYWORDS_PATH)
+    important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
 
-    starting_DOIs = set()
+    starting_DOIs = read_starting_corpus(STARTING_CORPUS_PATH)
     seen_DOIs = set()
-
-    with open(STARTING_CORPUS_PATH, 'r') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            doi = row['DOI']
-            if doi: 
-                starting_DOIs.add(doi)
 
     starting_papers = set()
     seen_papers = set()
@@ -195,20 +163,8 @@ def main():
     
 
     #Colour nodes by antibiotic class
-    abx_list = []
-    abx_colours = dict()
-    abx_classes = dict()
+    abx_list, abx_colours, abx_classes = read_antibiotic_colours(ABX_COLOURS)
     node_colours = dict()
-
-    with open(ABX_COLOURS, 'r') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            abx = row['abx']
-            colour = row['colour']
-            abxclass = row['class']
-            abx_colours[abx] = colour
-            abx_classes[abx] = abxclass
-            abx_list.append(abx)
 
     #Add starting corpus as papers, DAG nodes (of depth 0) and calculate scores
     for i in starting_DOIs:
@@ -445,14 +401,7 @@ def main():
                             font_size=6, font_weight='bold', font_family='sans-serif', 
                             horizontalalignment = 'center', verticalalignment = 'center')
 
-    with open('output.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(['DOI', 'author', 'title', 'times_seen'])
-        for paper,times_seen in paper_counter.items(): 
-            writer.writerow([paper.get_DOI(), 
-                             paper.get_title(), 
-                             paper.get_first_author(),
-                             times_seen])
+    write_output(OUTPUT_PATH, paper_counter)
     
     plt.show()
 

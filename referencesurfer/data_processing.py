@@ -32,3 +32,32 @@ def read_imported_authors(path: str) -> list:
             author = author.lower()
             important_authors.append(author)
     return important_authors
+
+def read_starting_corpus(path: str) -> set: 
+    _starting_DOIs = set()
+    with open(path, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            doi = row['DOI']
+            if doi: 
+                _starting_DOIs.add(doi)
+    return _starting_DOIs
+
+def read_antibiotic_colours(path: str) -> tuple[list, dict, dict]:
+    """
+    Read antibiotic colours form path .csv
+    Return tuple of abx_list, abx_colours, abx_classes
+    """
+    _abx_list = []
+    _abx_colours = dict()
+    _abx_classes = dict()
+    with open(path, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            abx = row['abx']
+            colour = row['colour']
+            abxclass = row['class']
+            _abx_colours[abx] = colour
+            _abx_classes[abx] = abxclass
+            _abx_list.append(abx)
+    return _abx_list, _abx_colours, _abx_classes
