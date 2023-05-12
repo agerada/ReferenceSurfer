@@ -11,6 +11,7 @@
 import unittest
 
 from .context import referencesurfer
+from referencesurfer import paper_nodes
 
 class CrossRefBadDOITestCase(unittest.TestCase): 
     def test_bad_query_result(self): 
@@ -29,6 +30,18 @@ class CrossRefGoodDOITestCase(unittest.TestCase):
         self.assertIsInstance(self.good_query, dict)
     
     def test_paper_maker_from_query_result(self):
-        paper = referencesurfer.make_paper_from_query(self.good_query)
-        self.assertIsInstance(paper, referencesurfer.Paper)
+        paper = referencesurfer.query_handlers.make_paper_from_query(self.good_query)
+        self.assertIsInstance(paper, paper_nodes.Paper)
         
+class DOICleanerTestCase(unittest.TestCase): 
+    def test_clean_up_DOI(self): 
+        doi_link = 'https://doi.org/10.1000/182' # valid DOI link to DOI handbook
+        doi = '10.1000/182'
+        same_doi = referencesurfer.query_handlers.clean_up_DOI(doi)
+        self.assertEqual(doi, same_doi)
+
+        link_removed = referencesurfer.query_handlers.clean_up_DOI(doi_link)
+        self.assertEqual(doi, link_removed)
+
+if __name__ == '__main__': 
+    unittest.main()

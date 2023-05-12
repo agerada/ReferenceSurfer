@@ -11,17 +11,14 @@ import os
 import sys
 from random import random,choice
 from unidecode import unidecode
-
-file_dir = os.path.dirname(__file__)
-sys.path.append(file_dir)
-
+import networkx as nx 
 
 # Internal dependencies
-from paper_nodes import DAGNode, Paper
-from data_processing import read_keywords, read_imported_authors
-from data_processing import read_starting_corpus, read_antibiotic_colours
-from data_processing import write_output
-from query_handlers import query_from_DOI, make_paper_from_query
+from .paper_nodes import DAGNode, Paper
+from .data_processing import read_keywords, read_imported_authors
+from .data_processing import read_starting_corpus, read_antibiotic_colours
+from .data_processing import write_output
+from .query_handlers import query_from_DOI, make_paper_from_query
 
 class SurfAction:
     def __init__(self): 
@@ -46,6 +43,12 @@ class InvalidReferences(SurfAction):
 class NewPaper(SurfAction): 
     _is_back_to_start = False
     _is_jump = False
+    def __init__(self, score): 
+        self._score = score
+        super().__init__()
+    
+    def __repr__(self): 
+        return f"NewPaper with {self._score} score"
 
 class PreviouslySeenPaper(SurfAction): 
     _is_back_to_start = False
@@ -53,31 +56,19 @@ class PreviouslySeenPaper(SurfAction):
 
 class LowScorePaper(SurfAction):
     _is_back_to_start = False
-    _is_jump = True
+    _is_jump = False
 
 class StartingPaper(SurfAction): 
     _is_back_to_start = None
     _is_jump = None
 
-class SurfWrapper(): 
-    def __init__(self, paper: Paper, action: SurfAction): 
-        self._paper = paper
-        self._action = action
-    
-    def is_back_to_start(self): 
-        return self._action.is_back_to_start()
-    
-    def is_jump(self): 
-        return self._action.is_jump()
-    
-    def get_paper(self): 
-        return self._paper
-    
 class Surfer():
-    def __init__(self, starting_papers, keywords = [], important_authors = []):
+    def __init__(self, starting_papers, keywords = [], important_authors = [],
+                 abx_colors = {}):
         self.seen_papers = set()
         self.keywords = keywords
         self.important_authors = important_authors
+        self.abx_colours = abx_colors
         self.paper_counter = dict()
         self.seen_DOIs = set()
         self.node_list = set()
@@ -85,7 +76,10 @@ class Surfer():
         self.paired_node_list = dict()
         self.last_state = StartingPaper
         
+        self.graph = nx.MultiDiGraph()
+
         self.node_colours = dict()
+        self.iterator_depth = 0
         
         if all([type(p) == Paper for p in starting_papers]): 
             self.starting_papers = starting_papers
@@ -96,11 +90,9 @@ class Surfer():
                     query = query_from_DOI(doi)
                     paper = make_paper_from_query(query)
                     self.starting_papers.add(paper)
-                    paper_name = paper.make_name()
-                    dag_node = DAGNode(paper_name)
-                    dag_node.set_depth(0)
-                    self.node_list.add(dag_node)
-                    self.depth_list[paper_name] = dag_node.get_depth()
+                    self.graph.add_node(paper, parents = (), 
+                                        depth = None, 
+                                        score = None)
                 except Exception as e:
                     print(f"Unable to import paper {doi} into Surfer:")
                     print(e)
@@ -112,17 +104,10 @@ class Surfer():
                         important_authors.append(last_author)
                 except: 
                     pass
-                try: 
-                    title = paper.get_title()
-                    title = unidecode(title)
-                    title = title.lower()
-                    self.node_colours[paper_name] = []
-                    for ab in self.abx_list:
-                        if ab in title:
-                            self.node_colours[paper_name].append(self.abx_colours[ab])           
-                except:
-                    pass
 
+                for ab in self.abx_colours:
+                    if ab in paper.get_title():
+                        paper.add_colour(abx_colors[ab])
 
         self.set_current_paper(self.starting_papers)
 
@@ -187,6 +172,13 @@ class Surfer():
 
                 self.seen_DOIs.add(doi)
                 self.seen_papers.add(random_paper)
+                list_of_nodes = list(self.graph.nodes)
+                if random_paper in list_of_nodes:
+                    # already seen
+                    old_node = next(n for n in list_of_nodes if n == random_paper)
+                    # update depth if SHALLOWER
+                    random_paper = random_paper if random_paper.depth < old_node.depth else old_node
+                    self.graph.add_node(random_paper)
                 random_paper_score = random_paper.score_paper(self.keywords, self.important_authors)
 
                 if random_paper_score <= 10:
@@ -215,7 +207,7 @@ class Surfer():
                     back_to_start_weight = 0.8 # same here, will be overwritten on next function call
                     self.set_current_paper(random_paper)
                     self.update_counter(random_paper)
-                    self.last_state = NewPaper
+                    self.last_state = NewPaper(score="moderate")
                     return self.current_paper
                 
                 elif random_paper_score > 40:
@@ -230,7 +222,7 @@ class Surfer():
                     back_to_start_weight = 0.05 # ditto
                     self.set_current_paper(random_paper)
                     self.update_counter(random_paper)
-                    self.last_state = NewPaper
+                    self.last_state = NewPaper(score="excellent")
                     return self.current_paper
                 
                 else:
@@ -238,7 +230,7 @@ class Surfer():
                     back_to_start_weight = 0.15 # ditto
                     self.set_current_paper(random_paper)
                     self.update_counter(random_paper)
-                    self.last_state = NewPaper
+                    self.last_state = NewPaper(score="good")
                     return self.current_paper
 
 

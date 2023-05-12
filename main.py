@@ -27,7 +27,7 @@ import metapub
 from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
 
 # Internal dependencies
-from referencesurfer.surf import Surfer, SurfWrapper, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
+from referencesurfer.surf import Surfer, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
 from referencesurfer.paper_nodes import DAGNode
 from referencesurfer.data_processing import read_keywords, read_imported_authors
 from referencesurfer.data_processing import read_starting_corpus, read_antibiotic_colours
@@ -51,12 +51,15 @@ def main():
     
     #Colour nodes by antibiotic class
     abx_list, abx_colours, abx_classes = read_antibiotic_colours(ABX_COLOURS)
-
-    surfer = Surfer(starting_DOIs, keywords, important_authors)
+    abx_dict = {}
+    for abx,colour in zip(abx_list, abx_colours):
+        abx_dict[abx] = colour
+        
+    surfer = Surfer(starting_DOIs, keywords, important_authors, abx_dict)
 
     paper_lag = surfer.current_paper
     #Start surfing
-    for _ in range(10): 
+    for _ in range(100): 
         print(f"iteration {_}")
         new_paper = surfer.iterate_surf()
         new_paper_name = new_paper.make_name()

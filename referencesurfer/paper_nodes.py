@@ -81,6 +81,27 @@ class Paper:
     def get_DOI(self):
         return self._DOI
     
+    def change_data(self, data: dict = {}): 
+        if not data: 
+            return
+        accepted_fields = ('title', 'doi', 'author', 'year', 'references')
+        for k,v in data.items(): 
+            if k.lower() in accepted_fields:
+                match k.lower(): 
+                    case 'title': 
+                        self._title = v
+                    case 'doi': 
+                        self._DOI = v
+                    case 'author': 
+                        self._author = v
+                    case 'year': 
+                        self._year = v
+                    case 'references': 
+                        self._references = v
+            else:
+                raise KeyError('invalid data provided to Paper.change_data()')
+
+
     def get_year(self):
         return self._year   
     
@@ -146,15 +167,16 @@ class Paper:
         paper_score = (wt_title_score + author_score)
         return(paper_score)
 
-class DAGNode():
-    def __init__(self, name, parent : Paper = None, depth = None, score = None):
-        self._name = name
-        if parent:
+class DAGNode:
+    def __init__(self, name, parent: Paper = None, depth = None, score = None):
+        if name is not None:
+            self._name = name
+        if isinstance(parent, Paper):
             self._parent = parent.make_name()
-        if score:
-            self._score = score 
-        if depth:
-            self._depth = depth    
+        if score is not None:
+            self._score = score
+        if depth is not None:
+            self._depth = depth
     
     def set_parent(self, parent_name): 
         self._parent = parent_name
@@ -169,11 +191,7 @@ class DAGNode():
         self._depth = depth
     
     def get_depth(self):
-        try:
-            print(f"{self._depth}")
-            return self._depth
-        except:
-            return None
+        return self._depth
 
     def make_scoreless_edge(self):
         parent = f"{self._parent}"
@@ -192,10 +210,45 @@ class DAGNode():
         dag_edge = (name, parent, score)
         return(tuple(dag_edge))    
 
-
-
-
-
-        
-        
+class DAGNodeWrapper(Paper):
+    def __init__(self, DOI, title, author, year, 
+                 references = None, 
+                 parents = None, 
+                 depth = None, 
+                 score = None, 
+                 colours = None):
+        self.set_parents(parents)
+        if depth: 
+            self.depth = depth
+        if score:
+            self.score = score
+        if colours:
+            self._colours
+        super().__init__(self, DOI, title, author, year, references, colours)
     
+    def set_parents(self, parents): 
+        if not parents:
+            self._parents = set()
+        if isinstance(parents, Paper): 
+            self._parents = set()
+            self._parents.add(parents)
+        elif isinstance(parents, set): 
+            self._parents = parents
+        else: 
+            raise ValueError("Input to DAGNodeWrapper.set_parents() not recognised")
+    
+    def add_parent(self, parent): 
+        self._parents.add(parent)
+
+    def set_colours(self, colours):
+        if not colours:
+            self._colours = set()
+        elif isinstance(colours, str):
+            self._colours = set()
+        elif isinstance(colours, set):
+            self._colours = colours
+        else: 
+            raise ValueError("Input to DAGNodeWrapper.set_parents() not recognised")
+
+    def add_colour(self, colour):
+        self._colours.add(colour)
