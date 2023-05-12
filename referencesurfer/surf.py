@@ -179,6 +179,7 @@ class Surfer():
                     # update depth if SHALLOWER
                     random_paper = random_paper if random_paper.depth < old_node.depth else old_node
                     self.graph.add_node(random_paper)
+                random_paper.add_parent(self.current_paper)
                 random_paper_score = random_paper.score_paper(self.keywords, self.important_authors)
 
                 if random_paper_score <= 10:
