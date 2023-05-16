@@ -132,7 +132,7 @@ def main():
 
     #Print our list of papers and how many times we have seen them, in order of frequency   
     #sorted_paper_counter = sorted(surfer.paper_counter.items(), key=lambda item: item[1], reverse=True)
-    sorted_papers = sorted(surfer.seen_papers, key = lambda paper: paper.counter, reverse=True)
+    sorted_papers = sorted(list(surfer.graph.nodes), key = lambda paper: paper.counter, reverse=True)
 
     for paper in sorted_papers: 
         print(f"Paper {paper.make_name()} {paper.get_title()} DOI {paper.get_DOI()} seen {paper.counter} times")

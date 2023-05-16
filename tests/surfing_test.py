@@ -33,52 +33,53 @@ class SurferMainTestCase(unittest.TestCase):
     def setUpClass(cls):
         """
         Simple structure: 
-        0 ---> Nil
-        1 ---> 2
+        0 ---> 1
+            -> 2
             -> 3
-            -> 4
-        5 ---> 2 ---> 6 
-        7 ---> Nil
+        4 ---> 1 ---> 5
+        6 ---> Nil
 
         """
         authors = ["Smith A", "England B", "Writer C"]
-        paper_0 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
-        paper_1 = DAGNodeWrapper("1", "paper_1", choice(authors), 2023)
-        paper_2 = DAGNodeWrapper("2", "paper_2", choice(authors), 2023)
-        paper_3 = DAGNodeWrapper("3", 'paper_3', choice(authors), 2023)
-        paper_4 = DAGNodeWrapper('4', 'paper_4', choice(authors), 2023)
-        paper_5 = DAGNodeWrapper('5', 'paper_5', choice(authors), 2023)
-        paper_6 = DAGNodeWrapper('6', 'paper_6', choice(authors), 2023)
-        paper_7 = DAGNodeWrapper('7', 'paper_7', choice(authors), 2023)
+        #paper_0 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
+        paper_1 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
+        paper_2 = DAGNodeWrapper('1', 'paper_1', choice(authors), 2023)
+        paper_3 = DAGNodeWrapper('2', 'paper_2', choice(authors), 2023)
+        paper_4 = DAGNodeWrapper('3', 'paper_3', choice(authors), 2023)
+        paper_5 = DAGNodeWrapper('4', 'paper_4', choice(authors), 2023)
+        paper_6 = DAGNodeWrapper('5', 'paper_5', choice(authors), 2023)
+        paper_7 = DAGNodeWrapper('6', 'paper_6', choice(authors), 2023)
 
         # set up reference links
         paper_1.set_references([paper_2, paper_3, paper_4])
         paper_5.set_references([paper_2])
         paper_2.set_references([paper_6])
         
-        cls.all_papers = [paper_0, paper_1, paper_2, paper_3, paper_4, paper_5, paper_6, paper_7]
+        cls.all_papers = [paper_1, paper_2, paper_3, paper_4, paper_5, paper_6, paper_7]
         cls.starting_corpus = [paper_1, paper_5, paper_7]
 
     def test_create_surfer(self):
+        # Step 1 - Test init of Surfer class
         surfer = surf.Surfer(starting_papers=self.starting_corpus)
         self.assertIsInstance(surfer, surf.Surfer)
+
+        # Step 2 - Run 100 iterations without exception
         for _ in range(100): 
-            papers = list(surfer.graph.nodes)
-            for p in papers:
-                print(f"Paper = {p.get_DOI()}, parents = {[i.get_DOI() for i in p.get_parents()]}")
             surfer.iterate_surf()
-            print
 
-        for i in list(surfer.graph.nodes):
-            print(f"{i} seen {i.counter} times")
-        print
-        print("*****")
+        # Step 3 - Check that output graph structure is sensible 
+        # Ensure papers have same parents as above schema
+        # Indexed so that numbers match
+        papers_post_surfing = list(surfer.graph.nodes)
+        papers_post_surfing.sort(key = lambda x: x.get_DOI())
+        self.assertEqual(papers_post_surfing[0].get_parents(), frozenset())
+        self.assertEqual(papers_post_surfing[1].get_parents(), frozenset([papers_post_surfing[0], 
+                                                                      papers_post_surfing[4]]))
+        self.assertEqual(papers_post_surfing[2].get_parents(), frozenset([papers_post_surfing[0]]))
+        self.assertEqual(papers_post_surfing[3].get_parents(), frozenset([papers_post_surfing[0]]))
+        self.assertEqual(papers_post_surfing[4].get_parents(), frozenset())
+        self.assertEqual(papers_post_surfing[5].get_parents(), frozenset([papers_post_surfing[1]]))
+        self.assertEqual(papers_post_surfing[6].get_parents(), frozenset())
 
-        print("PARENTS:")
-        self.assertEqual(self.all_papers[1].get_parents(), frozenset())
-        self.assertEqual(self.all_papers[2].get_parents(), frozenset([self.all_papers[1], 
-                                                                      self.all_papers[5]]))
-        for i in surfer.tree:
-            print(f'paper {i}: parents-- {i.get_parents()}')
 if __name__ == '__main__':
     unittest.main()

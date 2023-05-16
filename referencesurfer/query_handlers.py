@@ -33,11 +33,11 @@ def query_from_DOI(doi: str):
     print(f"Unable to pull {doi}")
     return None
 
-def make_paper_from_query(query, use_pubmed = False, parents = set(), depth = 0, score = 0,
+def make_paper_from_query(query, use_pubmed = False, parents = frozenset(), depth = 0, score = 0,
                           colours = set()):
     message = query['message']
     doi = message['DOI']
-    title = message['title']
+    [title] = message['title']
     date_time = message['created']['date-time']
     year = datetime.fromisoformat(date_time).year
     references = message['reference'] if message['references-count'] > 0 else None
