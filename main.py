@@ -54,20 +54,23 @@ def main():
     abx_dict = {}
     for abx,colour in zip(abx_list, abx_colours):
         abx_dict[abx] = colour
-        
+
     surfer = Surfer(starting_DOIs, keywords, important_authors, abx_dict)
 
-    paper_lag = surfer.current_paper
+    #paper_lag = surfer.current_paper
     #Start surfing
-    for _ in range(100): 
+    for _ in range(10): 
         print(f"iteration {_}")
         new_paper = surfer.iterate_surf()
+        print(f"******{new_paper}")
+        """
         new_paper_name = new_paper.make_name()
         new_node = DAGNode(new_paper_name)
-
         if new_node not in surfer.node_list:
             surfer.node_list.add(new_node)
+        """
 
+        """
         #If current paper has been arrived at from another paper without jumping - set parent and increase depth
         print(surfer.last_state)
         if not surfer.last_state.is_jump(): 
@@ -87,7 +90,9 @@ def main():
                     surfer.paired_node_list[new_paper_name].append(new_edge)
                 else:
                     pass
+        """
         
+        """
         #Assign a colour
         new_paper_title = new_paper.get_title()
         if new_paper_name not in surfer.node_colours:
@@ -100,6 +105,7 @@ def main():
                 if ab in new_paper_title:
                     surfer.node_colours[new_paper_name].append(abx_colours[ab])
         
+        """
         """
         #Keep track of how many times we have seen this paper
         if new_paper not in surfer.starting_papers: 
@@ -114,26 +120,42 @@ def main():
         # I don't think these steps are necessary 
         # there is already a check in iterate_surf
         
+        """
         if new_paper.get_references(): 
             paper_lag = new_paper
         elif surfer.seen_papers: 
             paper_lag = choice(list(surfer.seen_papers))
         else: 
             paper_lag = choice(list(surfer.starting_papers))
+        """
         
 
     #Print our list of papers and how many times we have seen them, in order of frequency   
-    sorted_paper_counter = sorted(surfer.paper_counter.items(), key=lambda item: item[1], reverse=True)
+    #sorted_paper_counter = sorted(surfer.paper_counter.items(), key=lambda item: item[1], reverse=True)
+    sorted_papers = sorted(surfer.seen_papers, key = lambda paper: paper.counter, reverse=True)
 
-    for i,j in sorted_paper_counter: 
-        print(f"Paper {i.make_name()} {i.get_title()} DOI {i.get_DOI()} seen {j} times")
-
-    #Make pairs for DAG edges
-    concat_paired_nodes = []
-    for paper_name in surfer.paired_node_list:
-        for pair in surfer.paired_node_list[paper_name]:
-            concat_paired_nodes.append(pair)
+    for paper in sorted_papers: 
+        print(f"Paper {paper.make_name()} {paper.get_title()} DOI {paper.get_DOI()} seen {paper.counter} times")
+    """
+        #Make pairs for DAG edges
+        concat_paired_nodes = []
+        for paper_name in surfer.paired_node_list:
+            for pair in surfer.paired_node_list[paper_name]:
+                concat_paired_nodes.append(pair)
+    """
     
+    edges = surfer.make_edges()
+    nodes = list(surfer.graph.nodes)
+    labels = {paper: paper.get_DOI() for paper in list(surfer.graph)}
+    DAG = surfer.graph
+    nx.draw_networkx(DAG, labels = labels)
+    plt.show()
+    print(labels)
+    pos= nx.nx_agraph.graphviz_layout(DAG, prog = "dot")
+    nx.draw_networkx_nodes(DAG, pos)
+    nx.draw_networkx_edges(DAG, pos, alpha=0.4, arrowstyle='<|-')
+    nx.draw_networkx_labels(DAG, labels)
+    plt.show()
     #Make labels for DAG nodes - label all initial papers
     labelled_list = [] 
     labels = {}

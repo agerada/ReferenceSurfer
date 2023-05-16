@@ -33,8 +33,8 @@ def query_from_DOI(doi: str):
     print(f"Unable to pull {doi}")
     return None
 
-def make_paper_from_query(query, use_pubmed = False, parents = None, depth = None, score = None,
-                          colours = None):
+def make_paper_from_query(query, use_pubmed = False, parents = set(), depth = 0, score = 0,
+                          colours = set()):
     message = query['message']
     doi = message['DOI']
     title = message['title']

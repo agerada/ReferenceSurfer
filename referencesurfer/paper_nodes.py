@@ -11,11 +11,12 @@
 from anytree import NodeMixin
 import networkx as nx 
 from unidecode import unidecode
+import warnings
 
 class Paper:
     def __init__(self, DOI, title, author, year, references = None):
         self._DOI = DOI
-        self._title = title[0] if title else None
+        self._title = title
         self._author = author
         self._year = year
         self._name = self.make_name()
@@ -32,6 +33,12 @@ class Paper:
             ref = Paper(doi, title, author, year)
             self._references.append(ref)                     
     
+    def set_references(self, references: list):
+        if not all(True for ref in references if isinstance(ref, Paper)):
+            raise TypeError("Trying to set references with non Paper objects")
+        else: 
+            self._references = references
+
     def __repr__(self) -> str:
         return f"""
         Paper {self._DOI}, author: {self.get_first_author()}, year: {self._year},
@@ -169,8 +176,10 @@ class Paper:
 
 class DAGNode:
     def __init__(self, name, parent: Paper = None, depth = None, score = None):
+        warnings.warn("DAGNode class is deprecated", DeprecationWarning, 2)
         if name is not None:
             self._name = name
+            DeprecationWarning
         if isinstance(parent, Paper):
             self._parent = parent.make_name()
         if score is not None:
@@ -213,32 +222,33 @@ class DAGNode:
 class DAGNodeWrapper(Paper):
     def __init__(self, DOI, title, author, year, 
                  references = None, 
-                 parents = None, 
-                 depth = None, 
-                 score = None, 
-                 colours = None):
+                 parents = frozenset(), 
+                 depth = 0, 
+                 score = 0, 
+                 colours = set(),
+                 counter = 0):
         self.set_parents(parents)
-        if depth: 
-            self.depth = depth
-        if score:
-            self.score = score
-        if colours:
-            self._colours
-        super().__init__(self, DOI, title, author, year, references, colours)
+        self.counter = counter
+        self.depth = depth
+        self.score = score
+        self._colours = colours
+        super().__init__(DOI, title, author, year, references)
     
-    def set_parents(self, parents): 
-        if not parents:
-            self._parents = set()
-        if isinstance(parents, Paper): 
-            self._parents = set()
-            self._parents.add(parents)
-        elif isinstance(parents, set): 
-            self._parents = parents
-        else: 
+    def set_parents(self, parents: frozenset[Paper]): 
+        if not isinstance(parents, frozenset): 
             raise ValueError("Input to DAGNodeWrapper.set_parents() not recognised")
+        if not all(True for paper in parents if isinstance(paper, Paper)): 
+            raise ValueError("Input to DAGNodeWrapper.set_parents() not recognised")
+        self._parents = parents
     
-    def add_parent(self, parent): 
-        self._parents.add(parent)
+    def add_parent(self, new_parent): 
+        old_parents = self._parents
+        new_parent = frozenset([new_parent])
+        new_parents = old_parents.union(new_parent)
+        self.set_parents(new_parents)
+        
+    def get_parents(self):
+        return self._parents
 
     def set_colours(self, colours):
         if not colours:
@@ -248,7 +258,7 @@ class DAGNodeWrapper(Paper):
         elif isinstance(colours, set):
             self._colours = colours
         else: 
-            raise ValueError("Input to DAGNodeWrapper.set_parents() not recognised")
+            raise ValueError("Input to DAGNodeWrapper.set_colours() not recognised")
 
     def add_colour(self, colour):
         self._colours.add(colour)
