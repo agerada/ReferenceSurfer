@@ -146,7 +146,7 @@ def main():
     
     edges = surfer.make_edges()
     nodes = list(surfer.graph.nodes)
-    labels = {paper: paper.get_DOI() for paper in list(surfer.graph)}
+    labels = {paper: paper.get_last_author() for paper in list(surfer.graph)}
     DAG = surfer.graph
     nx.draw_networkx(DAG, labels = labels)
     plt.show()
@@ -154,7 +154,7 @@ def main():
     pos= nx.nx_agraph.graphviz_layout(DAG, prog = "dot")
     nx.draw_networkx_nodes(DAG, pos)
     nx.draw_networkx_edges(DAG, pos, alpha=0.4, arrowstyle='<|-')
-    nx.draw_networkx_labels(DAG, labels)
+    #nx.draw_networkx_labels(DAG, labels)
     plt.show()
     #Make labels for DAG nodes - label all initial papers
     labelled_list = [] 

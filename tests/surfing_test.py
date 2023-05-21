@@ -27,10 +27,8 @@ class SurfActionsTestCase(unittest.TestCase):
         for c, back_to_start in zip(classes, is_back_to_start_expected): 
             self.assertTrue(issubclass(c, surf.SurfAction))
             self.assertEqual(c.is_back_to_start(), back_to_start)
-        
-class SurferMainTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+
+def make_test_corpus() -> tuple[list[DAGNodeWrapper], list[DAGNodeWrapper]]:
         """
         Simple structure: 
         0 ---> 1
@@ -39,24 +37,33 @@ class SurferMainTestCase(unittest.TestCase):
         4 ---> 1 ---> 5
         6 ---> Nil
 
+        Returns tuple:
+                    all_papers, starting_papers
         """
-        authors = ["Smith A", "England B", "Writer C"]
-        #paper_0 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
-        paper_1 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
-        paper_2 = DAGNodeWrapper('1', 'paper_1', choice(authors), 2023)
-        paper_3 = DAGNodeWrapper('2', 'paper_2', choice(authors), 2023)
-        paper_4 = DAGNodeWrapper('3', 'paper_3', choice(authors), 2023)
-        paper_5 = DAGNodeWrapper('4', 'paper_4', choice(authors), 2023)
-        paper_6 = DAGNodeWrapper('5', 'paper_5', choice(authors), 2023)
-        paper_7 = DAGNodeWrapper('6', 'paper_6', choice(authors), 2023)
+
+        authors = ["Smith A", "England B", "Writer C", "Bloggs J", "Barker P", "Sufer C", "Cooper F"]
+        paper_0 = DAGNodeWrapper('0', 'paper_0', choice(authors), 2023)
+        paper_1 = DAGNodeWrapper('1', 'paper_1', choice(authors), 2023)
+        paper_2 = DAGNodeWrapper('2', 'paper_2', choice(authors), 2023)
+        paper_3 = DAGNodeWrapper('3', 'paper_3', choice(authors), 2023)
+        paper_4 = DAGNodeWrapper('4', 'paper_4', choice(authors), 2023)
+        paper_5 = DAGNodeWrapper('5', 'paper_5', choice(authors), 2023)
+        paper_6 = DAGNodeWrapper('6', 'paper_6', choice(authors), 2023)
 
         # set up reference links
-        paper_1.set_references([paper_2, paper_3, paper_4])
-        paper_5.set_references([paper_2])
-        paper_2.set_references([paper_6])
-        
-        cls.all_papers = [paper_1, paper_2, paper_3, paper_4, paper_5, paper_6, paper_7]
-        cls.starting_corpus = [paper_1, paper_5, paper_7]
+        paper_0.set_references([paper_1, paper_2, paper_3])
+        paper_4.set_references([paper_1])
+        paper_1.set_references([paper_5])
+
+        all_papers = [paper_0, paper_1, paper_2, paper_3, paper_4, paper_5, paper_6]
+        starting_papers = [paper_0, paper_4, paper_6]
+
+        return all_papers, starting_papers
+
+class SurferMainTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.all_papers, cls.starting_corpus = make_test_corpus()
 
     def test_create_surfer(self):
         # Step 1 - Test init of Surfer class
