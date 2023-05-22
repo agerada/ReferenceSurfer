@@ -49,50 +49,19 @@ def main():
     keywords = read_keywords(KEYWORDS_PATH)
     important_authors = read_imported_authors(IMPORTANT_AUTHORS_PATH)
     starting_DOIs = read_starting_corpus(STARTING_CORPUS_PATH)
-    
-    #Colour nodes by antibiotic class
     colour_dict = read_keyword_colours(KEYWORD_COLOURS)
 
     _, starting_papers = make_test_corpus()
 
     surfer = Surfer(starting_papers, keywords, important_authors, colour_dict)
 
-    #paper_lag = surfer.current_paper
-    #Start surfing
     for _ in range(1000): 
         surfer.iterate_surf()
-
-    #Print our list of papers and how many times we have seen them, in order of frequency   
-    #sorted_paper_counter = sorted(surfer.paper_counter.items(), key=lambda item: item[1], reverse=True)
-    sorted_papers = sorted(list(surfer.graph.nodes), key = lambda paper: paper.counter, reverse=True)
-
-    for paper in sorted_papers: 
-        print(f"Paper {paper.get_DOI()} {paper.get_title()} DOI {paper.get_DOI()} seen {paper.counter} times")
-
-    surfer.make_edges()
-    labels = {paper: paper.get_DOI() for paper in list(surfer.graph)}
-    DAG = surfer.graph
-    pos= nx.nx_agraph.graphviz_layout(DAG, prog = "dot")
-
-    # sizes
-    node_scores = [n.score + n.counter for n in list(surfer.graph) if not n.is_starting_paper()]
-    mean_node_score = np.mean(node_scores)
-    node_size_multiplier = [(n.score + n.counter) / mean_node_score if not n.is_starting_paper() else 1
-                            for n in list(surfer.graph)]
-    node_size = [i * 300 for i in node_size_multiplier]
-    
-    # colours
-    node_colours = {}
-    for n in list(surfer.graph):
-        if n.is_starting_paper():
-            node_colours[n] = '#2986CC'
-        elif n.score + n.counter > mean_node_score:
-            node_colours[n] = '#00FF00'
-        else: 
-            node_colours[n] = '#F44336'
-
-    nx.draw_networkx(DAG, pos, labels = labels, node_size = node_size, node_color = node_colours.values())
+        
+    print(surfer)
+    surfer.draw_graph()
     plt.show()
+
     write_output(OUTPUT_PATH, list(surfer.graph))
 
 main()

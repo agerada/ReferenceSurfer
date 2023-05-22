@@ -64,7 +64,11 @@ def write_output(path: str, results: list[DAGNodeWrapper]) -> None:
         writer.writerow(['DOI', 'author', 'title', 'score', 'times_seen'])
         for node in results:
             writer.writerow([node.get_DOI(), 
-                                node.get_title(), 
                                 node.get_first_author(),
+                                node.get_title(), 
                                 node.score, 
                                 node.counter])
+
+def mean(numbers):
+    # from: https://stackoverflow.com/a/7716358
+    return float(sum(numbers)) / max(len(numbers), 1)

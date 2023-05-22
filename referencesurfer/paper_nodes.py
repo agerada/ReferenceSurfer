@@ -239,6 +239,7 @@ class DAGNodeWrapper(Paper):
         self.depth = depth
         self.score = score
         self._colours = colours
+        self._type = type
         super().__init__(DOI, title, author, year, references)
     
     def set_parents(self, parents: frozenset[Paper]): 

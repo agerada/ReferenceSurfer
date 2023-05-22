@@ -16,6 +16,7 @@ import networkx as nx
 # Internal dependencies
 from .paper_nodes import DAGNodeWrapper, Paper, PaperType
 from .query_handlers import query_from_DOI, make_paper_from_query
+from .data_processing import mean
 
 class SurfAction:
     def __init__(self): 
@@ -54,7 +55,6 @@ class NewPaper(SurfAction):
         Title = {paper.title_score(keywords)}, 
         Author = {paper.author_score(important_authors)} 
         """)
-        
 
 class PreviouslySeenPaper(SurfAction): 
     _is_back_to_start = False
@@ -84,21 +84,12 @@ class Surfer():
         self.keywords = keywords
         self.important_authors = important_authors
         self.keyword_colours = keyword_colours
-        self.paper_counter = dict()
         self.seen_DOIs = set()
-        self.node_list = set()
-        self.depth_list = dict()
-        self.paired_node_list = dict()
         self.last_state = StartingPaper
         self.current_paper = None
-        self.parent = None
-        self.tree = set()
-        self.jump = False
-        
         self.graph = nx.MultiDiGraph()
-
-        self.node_colours = dict()
         self.iterator_depth = 0
+        self.iteration_counter = 0
         
         if all([isinstance(p, Paper) for p in starting_papers]): 
             self.starting_papers = starting_papers
@@ -152,6 +143,7 @@ class Surfer():
     def iterate_surf(self, back_to_start_weight = 0.15):
         previous_paper = self.current_paper
         next_paper = self.next_paper(back_to_start_weight)
+        self.iteration_counter += 1
         if not self.last_state.is_jump():
             self.graph.remove_node(next_paper)
             next_paper.add_parent(previous_paper)
@@ -176,7 +168,6 @@ class Surfer():
             self.iterator_depth = self.current_paper.depth
             if self.iterator_depth != 0:
                 raise ValueError("Failsafe - gone back to start but depth != 0")
-            self.parent = None
             return self.current_paper
         
         for _ in range(10): 
@@ -239,7 +230,11 @@ class Surfer():
         self.last_state = InvalidReferences
         return self.current_paper
 
-    def make_edges(self): 
+    def make_edges(self) -> list[tuple]: 
+        """
+        Create list of (parent, child) edges for graph visualisation
+        Adds list of edges to self.graph
+        """
         edges = []
         all_papers = list(self.graph.nodes)
         for paper in all_papers: 
@@ -247,7 +242,103 @@ class Surfer():
                 edge = (parent, paper)
                 if edge not in edges:
                     edges.append(edge)
-                    print(f"Parent: {edge[0].get_DOI()} child: {edge[1].get_DOI()}")
         self.graph.add_edges_from(edges)
         return edges
     
+    def get_mean_node_score(self) -> float:
+        node_scores = [n.score + n.counter for n in list(self.graph) if not n.is_starting_paper()]
+        return mean(node_scores)
+
+    def make_node_sizes(self, mean_size = 300) -> list[int]:
+        """
+        Create list of node sizes, based on node score and times seen (i.e., counter)
+        Nodes are standardised by mean score of all nodes
+        mean_size can be used to scale overall sizes
+        """
+        mean_node_score = self.get_mean_node_score()
+        node_size_multiplier = [(n.score + n.counter) / mean_node_score if not n.is_starting_paper() else 1
+                                for n in list(self.graph)]
+        node_size = [int(i * mean_size) for i in node_size_multiplier]
+        return node_size
+    
+    def make_node_colours(self, 
+                          starting_papers_colour = '#2986CC', 
+                          above_average_colour = '#00FF00',
+                          below_average_colour = '#F44336'):
+            mean_node_score = self.get_mean_node_score()
+            node_colours = []
+            for n in list(self.graph):
+                if n.is_starting_paper():
+                    node_colours.append(starting_papers_colour)
+                elif n.score + n.counter > mean_node_score:
+                    node_colours.append(above_average_colour)
+                else: 
+                    node_colours.append(below_average_colour)
+            return node_colours
+    
+    def draw_graph(self,
+                   labels = None) -> None:
+        """
+        Sets up a graph drawing, using draw_networkx from networkx module
+        Visualise using matplotlib.pyplot
+        labels can be: 
+            - dict of { nodes: label (as str) } 
+            - list[str] of labels
+            - callable, e.g. lambda x: x.get_DOI()
+            note: if labels is not callable then len(labels) must be 
+            equal to number of nodes in graph
+        """
+        self.make_edges()
+        graph_nodes = list(self.graph.nodes)
+        pos = nx.nx_agraph.graphviz_layout(self.graph, prog = "dot")
+
+        if labels is None: 
+            labels_dict = None
+        elif type(labels) == dict:
+            if len(labels) != len(graph_nodes):
+                raise ValueError
+            labels_dict = labels
+        elif type(labels) == list:
+            if len(labels) != len(graph_nodes):
+                raise ValueError
+            labels_dict = {node: label for node,label in zip(graph_nodes,
+                                                             labels)}
+        elif callable(labels):
+            labels_dict = {node: labels(node) for node in graph_nodes}
+        else:
+            print("""
+            labels parameter for draw_graph not recognised or not
+            provided, using default __repr__ for nodes
+            """)
+            labels_dict = None
+        nx.draw_networkx(self.graph,
+                            pos,
+                            labels=labels_dict,
+                            node_size=self.make_node_sizes(),
+                            node_color=self.make_node_colours())
+        
+    def __repr__(self):
+        if self.last_state == StartingPaper:
+            printing_string = f"""
+            Surfer instance --- initial state
+            Starting papers: 
+            """
+            for node in list(self.starting_papers):
+                printing_string += str(node)
+            return printing_string
+        else: 
+            printing_string = f""""
+            Surfer instance --- iteration: {self.iteration_counter} 
+            Starting papers: 
+            """
+            for node in list(self.starting_papers):
+                printing_string += str(node)
+            printing_string += f"""
+            Top 10 papers: 
+            """
+            sorted_papers = sorted(list(self.graph.nodes), 
+                                   key = lambda paper: paper.score + paper.counter, 
+                                   reverse=True)
+            for paper in sorted_papers[:10]: 
+                printing_string += f"Paper: {str(paper)} seen {paper.counter} times \n"
+            return printing_string
