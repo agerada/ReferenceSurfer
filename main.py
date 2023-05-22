@@ -30,7 +30,7 @@ from networkx.drawing.nx_agraph import graphviz_layout as graphviz_layout
 from referencesurfer.surf import Surfer, BackToStart, InvalidReferences, NewPaper, PreviouslySeenPaper, LowScorePaper
 from referencesurfer.paper_nodes import DAGNode
 from referencesurfer.data_processing import read_keywords, read_imported_authors
-from referencesurfer.data_processing import read_starting_corpus, read_antibiotic_colours
+from referencesurfer.data_processing import read_starting_corpus, read_keyword_colours
 from referencesurfer.data_processing import write_output
 from referencesurfer.query_handlers import query_from_DOI, make_paper_from_query
 from tests.surfing_test import make_test_corpus
@@ -42,7 +42,7 @@ NCBI_API_KEY='your_API_key'
 KEYWORDS_PATH = 'referencesurfer/keywords.csv'
 IMPORTANT_AUTHORS_PATH = 'referencesurfer/important_authors.csv'
 STARTING_CORPUS_PATH = 'referencesurfer/corpus.csv'
-ABX_COLOURS = 'referencesurfer/antibiotic_colours.csv'
+KEYWORD_COLOURS = 'referencesurfer/antibiotic_colours.csv'
 OUTPUT_PATH = 'output.csv'
 
 def main(): 
@@ -51,11 +51,11 @@ def main():
     starting_DOIs = read_starting_corpus(STARTING_CORPUS_PATH)
     
     #Colour nodes by antibiotic class
-    abx_dict = read_antibiotic_colours(ABX_COLOURS)
+    colour_dict = read_keyword_colours(KEYWORD_COLOURS)
 
     _, starting_papers = make_test_corpus()
 
-    surfer = Surfer(starting_papers, keywords, important_authors, abx_dict)
+    surfer = Surfer(starting_papers, keywords, important_authors, colour_dict)
 
     #paper_lag = surfer.current_paper
     #Start surfing

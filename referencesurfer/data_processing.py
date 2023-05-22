@@ -44,10 +44,10 @@ def read_starting_corpus(path: str) -> set:
                 _starting_DOIs.add(doi)
     return _starting_DOIs
 
-def read_antibiotic_colours(path: str) -> dict:
+def read_keyword_colours(path: str) -> dict:
     """
-    Read antibiotic colours form path .csv
-    Return tuple of abx_list, abx_colours, abx_classes
+    Read keyword colours from .csv
+    Returns dictionary of keyword: colour
     """
     _keyword_colours = dict()
     with open(path, 'r') as csvfile:

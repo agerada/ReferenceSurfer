@@ -15,9 +15,6 @@ import networkx as nx
 
 # Internal dependencies
 from .paper_nodes import DAGNodeWrapper, Paper, PaperType
-from .data_processing import read_keywords, read_imported_authors
-from .data_processing import read_starting_corpus, read_antibiotic_colours
-from .data_processing import write_output
 from .query_handlers import query_from_DOI, make_paper_from_query
 
 class SurfAction:
