@@ -14,7 +14,7 @@ from unidecode import unidecode
 import networkx as nx 
 
 # Internal dependencies
-from .paper_nodes import DAGNodeWrapper, Paper
+from .paper_nodes import DAGNodeWrapper, Paper, PaperType
 from .data_processing import read_keywords, read_imported_authors
 from .data_processing import read_starting_corpus, read_antibiotic_colours
 from .data_processing import write_output
@@ -83,10 +83,10 @@ class StartingPaper(SurfAction):
 
 class Surfer():
     def __init__(self, starting_papers, keywords = [], important_authors = [],
-                 abx_colours = {}):
+                 keyword_colours = {}):
         self.keywords = keywords
         self.important_authors = important_authors
-        self.abx_colours = abx_colours
+        self.keyword_colours = keyword_colours
         self.paper_counter = dict()
         self.seen_DOIs = set()
         self.node_list = set()
@@ -106,6 +106,7 @@ class Surfer():
         if all([isinstance(p, Paper) for p in starting_papers]): 
             self.starting_papers = starting_papers
             for paper in self.starting_papers:
+                paper.type = PaperType.STARTING_PAPER
                 self.graph.add_node(paper)
                 self.seen_DOIs.add(paper.get_DOI())
         else: 
@@ -114,6 +115,7 @@ class Surfer():
                 try: 
                     query = query_from_DOI(doi)
                     paper = make_paper_from_query(query)
+                    paper.type = PaperType.STARTING_PAPER
                     self.starting_papers.add(paper)
                     self.graph.add_node(paper)
                     self.seen_DOIs.add(paper.get_DOI())
@@ -131,9 +133,9 @@ class Surfer():
         self.set_current_paper(self.starting_papers)
 
     def add_colours_to_node(self, paper): 
-        for ab in self.abx_colours:
-            if ab in paper.get_title():
-                paper.add_colour(self.abx_colours[ab])
+        for keyword in self.keyword_colours:
+            if keyword in paper.get_title():
+                paper.add_colour(self.keyword_colours[keyword])
 
     def set_current_paper(self, papers): 
         """
@@ -215,12 +217,14 @@ class Surfer():
 
                 try:
                     random_paper = make_paper_from_query(query, depth = self.iterator_depth)
+                    random_paper.type = PaperType.SURFED_PAPER
                 except: 
                     print(f"Unable to make paper from query for: {random_paper.get_title()}")
                     continue
             
             ## set up new paper
             self.seen_DOIs.add(doi)
+            random_paper.type = PaperType.SURFED_PAPER
             self.add_colours_to_node(random_paper)
 
             random_paper.score = random_paper.score_paper(self.keywords, self.important_authors)

@@ -12,7 +12,13 @@ from anytree import NodeMixin
 import networkx as nx 
 from unidecode import unidecode
 import warnings
+from enum import Enum
 
+class PaperType(Enum):
+    STARTING_PAPER = 1
+    SURFED_PAPER = 2
+
+    
 class Paper:
     def __init__(self, DOI, title, author, year, references = None):
         self._DOI = DOI
@@ -221,6 +227,7 @@ class DAGNode:
 
 class DAGNodeWrapper(Paper):
     def __init__(self, DOI, title, author, year, 
+                 type = None, 
                  references = None, 
                  parents = frozenset(), 
                  depth = 0, 
@@ -262,3 +269,6 @@ class DAGNodeWrapper(Paper):
 
     def add_colour(self, colour):
         self._colours.add(colour)
+
+    def is_starting_paper(self) -> bool:
+        return True if self.type == PaperType.STARTING_PAPER else False

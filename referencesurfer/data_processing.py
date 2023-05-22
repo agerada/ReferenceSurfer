@@ -10,6 +10,7 @@
 
 from unidecode import unidecode
 import csv
+from .paper_nodes import DAGNodeWrapper
 
 def read_keywords(path: str) -> list[tuple]: 
     keywords = []
@@ -43,31 +44,27 @@ def read_starting_corpus(path: str) -> set:
                 _starting_DOIs.add(doi)
     return _starting_DOIs
 
-def read_antibiotic_colours(path: str) -> tuple[list, dict, dict]:
+def read_antibiotic_colours(path: str) -> dict:
     """
     Read antibiotic colours form path .csv
     Return tuple of abx_list, abx_colours, abx_classes
     """
-    _abx_list = []
-    _abx_colours = dict()
-    _abx_classes = dict()
+    _keyword_colours = dict()
     with open(path, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            abx = row['abx']
-            colour = row['colour']
-            abxclass = row['class']
-            _abx_colours[abx] = colour
-            _abx_classes[abx] = abxclass
-            _abx_list.append(abx)
-    return _abx_list, _abx_colours, _abx_classes
+            keyword = row['keyword']
+            _keyword_colours[keyword] = row['colour']
+            
+    return _keyword_colours
 
-def write_output(path: str, results: dict) -> None: 
+def write_output(path: str, results: list[DAGNodeWrapper]) -> None: 
     with open('output.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(['DOI', 'author', 'title', 'times_seen'])
-        for paper,times_seen in results.items(): 
-            writer.writerow([paper.get_DOI(), 
-                                paper.get_title(), 
-                                paper.get_first_author(),
-                                times_seen])
+        writer.writerow(['DOI', 'author', 'title', 'score', 'times_seen'])
+        for node in results:
+            writer.writerow([node.get_DOI(), 
+                                node.get_title(), 
+                                node.get_first_author(),
+                                node.score, 
+                                node.counter])
